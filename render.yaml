@@ -1,0 +1,12 @@
+services:
+  - type: worker
+    name: discord-bot
+    env: python
+    region: singapore
+    buildCommand: pip install -r requirements.txt && apt-get update && apt-get install -y ffmpeg
+    startCommand: python bot.py
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: FFMPEG_PATH
+        value: ffmpeg
