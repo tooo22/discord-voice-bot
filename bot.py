@@ -6,6 +6,8 @@ import os
 import asyncio
 import datetime
 import yt_dlp
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -683,11 +685,36 @@ async def tnowplaying(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
+# ---------- Health Check Web Server ----------
+
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"OK - Bot is running!")
+
+    def log_message(self, format, *args):
+        # Suppress logging request pings to avoid flooding the console
+        pass
+
+
+def run_web_server():
+    port = int(os.getenv("PORT", "10000"))
+    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+    print(f"Starting web server on port {port} for health checks...", flush=True)
+    server.serve_forever()
+
+
 # ---------- Run Bot ----------
 
 if not TOKEN:
     print("ERROR: DISCORD_TOKEN tidak ditemukan di file .env!")
     print("Pastikan file .env berisi: DISCORD_TOKEN=token_kamu")
     exit(1)
+
+# Start background web server for Render health checks
+web_thread = threading.Thread(target=run_web_server, daemon=True)
+web_thread.start()
 
 bot.run(TOKEN)
